@@ -1,0 +1,64 @@
+/* 
+    Document   : css
+    Created on : Apr 29, 2013, 9:53:14 PM
+    Author     : Pranit
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+root
+{ 
+    display: block;
+}
+
+.movie-thumb
+{
+    line-height: 15px;margin: 10px;background-color: #fff;width: 150px;display: inline-block;
+    text-align: center;
+    box-shadow: 2px 2px 3px #aaa;
+    border-left: #fff solid thin;
+    border-top: #fff solid thin;
+}
+.movie-thumb:hover
+{
+    box-shadow: 3px 3px 5px #666;
+    border-left: #ccc solid thin;
+    border-top: #ccc solid thin;
+    cursor: pointer
+}
+.movie-thumb-container
+{
+    background: #fff;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+.movie-detail-container 
+{
+    background: #fff;
+    padding: 15px;
+    text-align: center
+}
+span
+{
+    margin-bottom: 5px;
+    display: block
+}
+.influgradient
+{
+    background-image: linear-gradient(bottom, rgb(16,56,87) 0%, rgb(46,213,255) 100%);
+    background-image: -o-linear-gradient(bottom, rgb(16,56,87) 0%, rgb(46,213,255) 100%);
+    background-image: -moz-linear-gradient(bottom, rgb(16,56,87) 0%, rgb(46,213,255) 100%);
+    background-image: -webkit-linear-gradient(bottom, rgb(16,56,87) 0%, rgb(46,213,255) 100%);
+    background-image: -ms-linear-gradient(bottom, rgb(16,56,87) 0%, rgb(46,213,255) 100%);
+
+    background-image: -webkit-gradient(
+        linear,
+        left bottom,
+        left top,
+        color-stop(0, rgb(16,56,87)),
+        color-stop(1, rgb(46,213,255))
+        );
+
+    width: 70px;height: 70px;text-align: center;line-height: 70px;color: #fff;font-size: 20px;font-weight: bold;
+    display: inline-block;
+}
