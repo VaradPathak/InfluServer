@@ -42,7 +42,9 @@ public class QueryUtility {
 		switch (operation) {
 		/* Unique Properties */
 		case UNIQUE_PROPERTIES:
-			sparqlQuery = "SELECT ?releasedDate ?rtTitle ?audienceRating ?criticRating ?revenue ?studio ?posterURL ?httpURL ?rtid ?tmdbid ?imdbid  "
+			sparqlQuery = "SELECT ?releasedDate ?rtTitle ?audienceRating ?criticRating ?revenue ?studio ?posterURL ?httpURL ?rtid ?tmdbid ?imdbid "
+					+ "(group_concat(distinct ?tmdbGenre ; separator = \";\") AS ?tmdbGenres) "
+					+ "(group_concat(distinct ?keyword ; separator = \";\") AS ?keywords)"
 					+ "WHERE " + "{ " + "OPTIONAL{"
 					+ indentifier
 					+ " movieontology:releasedate ?releasedDate}. "
@@ -80,15 +82,15 @@ public class QueryUtility {
 					+ "?poster movieontology:url ?posterURL}. "
 					+ "OPTIONAL{"
 					+ indentifier
-					+ " movieontology:url ?httpURL} "
-					+ "} "
-					+ "LIMIT 1";
-			break;
-		/* Genre */
-		case GENRES:
-			sparqlQuery = "SELECT ?tmdbGenres " + "WHERE" + "{" + indentifier
-					+ " movieontology:belongsToGenre ?genre."
-					+ "?genre foaf:name ?tmdbGenres" + "}";
+					+ " movieontology:url ?httpURL}. "
+					+ "OPTIONAL{ "
+					+ indentifier
+					+ "	movieontology:belongsToGenre ?genre."
+					+ "?genre foaf:name ?tmdbGenre}. "
+					+ "OPTIONAL{ "
+					+ indentifier
+					+ " movieontology:keyword ?keyword}. "
+					+ "} LIMIT 1";
 			break;
 		/* Cast */
 		case CAST:
@@ -113,11 +115,6 @@ public class QueryUtility {
 					// + "?simMovie movieontology:rtid ?similarMovie "
 					+ "}";
 			break;
-		/* Keywords */
-		case KEYWORDS:
-			sparqlQuery = "SELECT ?keyword " + "WHERE " + "{ " + indentifier
-					+ " movieontology:keyword ?keyword " + "}";
-			break;
 		/* Top 250 Movies */
 		case TOP250:
 			sparqlQuery = "SELECT ?title ?year ?rtId ?rating ?posterURL ?movie  "
@@ -135,14 +132,14 @@ public class QueryUtility {
 		case MOVIE_ABSTRACTDATA:
 			sparqlQuery = "SELECT ?title ?year  " + "WHERE " + "{ "
 					+ indentifier + " movieontology:rttitle ?title. "
-					+ indentifier + " ontology:creationYear ?year " + "}";
+					+ indentifier + " ontology:creationYear ?year. " + "}";
 			break;
 		/* Trailers */
 		case TRAILERS:
-			sparqlQuery = " SELECT  ?trailerId ?trailer " + " WHERE " + " { "
+			sparqlQuery = "SELECT ?trailerId ?trailer " + " WHERE " + " { "
 					+ indentifier + " movieontology:hasTrailer ?mvtrailer. "
 					+ " ?mvtrailer foaf:name ?trailer. "
-					+ " ?mvtrailer dc11:identifier ?trailerId " + "  } ";
+					+ " ?mvtrailer dc11:identifier ?trailerId. " + "  } ";
 			break;
 		/* Influenced By Director */
 		case INFLUENCEDBY_DIRECTOR:
@@ -203,6 +200,8 @@ public class QueryUtility {
 						movie.year = Integer.parseInt(row.get(key).toString());
 					} catch (NullPointerException ex) {
 						movie.year = -1;
+					} catch (NumberFormatException e) {
+						movie.year = -1;
 					}
 					break;
 				case "rtId":
@@ -210,13 +209,15 @@ public class QueryUtility {
 						movie.rtId = Integer.parseInt(row.get(key).toString());
 					} catch (NullPointerException ex) {
 						movie.rtId = -1;
+					} catch (NumberFormatException e) {
+						movie.rtId = -1;
 					}
 					break;
 				case "rating":
 					try {
 						movie.audienceRating = Integer.parseInt(row.get(key)
 								.toString());
-					} catch (NullPointerException ex) {
+					} catch (Exception ex) {
 						movie.audienceRating = -1;
 					}
 					break;
@@ -235,6 +236,7 @@ public class QueryUtility {
 
 	@SuppressWarnings("unchecked")
 	private static JSONArray executeQuery(String query) {
+		System.out.println(query);
 		String url = "http://dydra.com/vspathak/influirold/sparql?auth_token=SKN620Vduyv1bhyPgtCD&user_id=vspathak&query=";
 		try {
 			query = URLEncoder.encode(query, "UTF-8");
@@ -247,7 +249,6 @@ public class QueryUtility {
 		StringBuffer response = null;
 		try {
 			URL URLobj = new URL(url + query);
-
 			HttpURLConnection con = (HttpURLConnection) URLobj.openConnection();
 
 			// optional default is GET
@@ -330,9 +331,6 @@ public class QueryUtility {
 		Integer id = 0;
 		String strId = "";
 		switch (operation) {
-		case GENRES:
-			detailedMovie.tmdbGenres = new ArrayList<>();
-			break;
 		case CAST:
 			detailedMovie.cast = new ArrayList<>();
 			break;
@@ -341,9 +339,6 @@ public class QueryUtility {
 			break;
 		case SIMILAR_MOVIES_RT:
 			detailedMovie.rtSimilarMovies = new ArrayList<>();
-			break;
-		case KEYWORDS:
-			detailedMovie.keywords = new ArrayList<>();
 			break;
 		case TRAILERS:
 			detailedMovie.trailers = new ArrayList<>();
@@ -367,7 +362,7 @@ public class QueryUtility {
 						try {
 							movie.year = Integer.parseInt(row.get(key)
 									.toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							movie.year = -1;
 						}
 						break;
@@ -375,7 +370,7 @@ public class QueryUtility {
 						try {
 							movie.imdbId = Integer.parseInt(row.get(key)
 									.toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							movie.imdbId = -1;
 						}
 						break;
@@ -396,7 +391,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.audienceRating = Integer.parseInt(row
 									.get(key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.audienceRating = -1;
 						}
 						break;
@@ -404,7 +399,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.criticRating = Integer.parseInt(row
 									.get(key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.criticRating = -1;
 						}
 						break;
@@ -412,7 +407,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.year = Integer.parseInt(row.get(key)
 									.toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.year = -1;
 						}
 						break;
@@ -420,7 +415,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.revenue = Integer.parseInt(row.get(
 									key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.revenue = -1;
 						}
 						break;
@@ -441,7 +436,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.imdbId = Integer.parseInt(row
 									.get(key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.imdbId = -1;
 						}
 						break;
@@ -449,7 +444,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.rtId = Integer.parseInt(row.get(key)
 									.toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.rtId = -1;
 						}
 						break;
@@ -457,19 +452,25 @@ public class QueryUtility {
 						try {
 							detailedMovie.tmdbId = Integer.parseInt(row
 									.get(key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.tmdbId = -1;
 						}
 						break;
-
-					}
-					break;
-				}
-				/* Genre */
-				case GENRES: {
-					switch (key) {
 					case "tmdbGenres":
-						detailedMovie.tmdbGenres.add(row.get(key).toString());
+						String[] genres = row.get(key).toString().split(";");
+						if (detailedMovie.tmdbGenres == null)
+							detailedMovie.tmdbGenres = new ArrayList<>();
+						for (String genre : genres) {
+							detailedMovie.tmdbGenres.add(genre);
+						}
+						break;
+					case "keyword":
+						String[] keywords = row.get(key).toString().split(";");
+						if (detailedMovie.keywords == null)
+							detailedMovie.keywords = new ArrayList<>();
+						for (String keyword : keywords) {
+							detailedMovie.keywords.add(keyword);
+						}
 						break;
 					}
 					break;
@@ -483,7 +484,7 @@ public class QueryUtility {
 					case "castId":
 						try {
 							id = Integer.parseInt(row.get(key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							id = -1;
 						}
 						break;
@@ -499,7 +500,7 @@ public class QueryUtility {
 					case "directorId":
 						try {
 							id = Integer.parseInt(row.get(key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							id = -1;
 						}
 						break;
@@ -512,15 +513,6 @@ public class QueryUtility {
 					case "similarMovie":
 						detailedMovie.rtSimilarMovies.add(row.get(key)
 								.toString());
-						break;
-					}
-					break;
-				}
-				/* Keywords */
-				case KEYWORDS: {
-					switch (key) {
-					case "keyword":
-						detailedMovie.keywords.add(row.get(key).toString());
 						break;
 					}
 					break;
@@ -548,7 +540,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.audienceRating = Integer.parseInt(row
 									.get(key).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.audienceRating = -1;
 						}
 						break;
@@ -562,7 +554,7 @@ public class QueryUtility {
 						try {
 							detailedMovie.year = Integer.parseInt(row.get(key)
 									.toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie.year = -1;
 						}
 						break;
@@ -605,7 +597,6 @@ public class QueryUtility {
 		// Get All Directors Inf and Inf by
 		String sparqlQuery = "";
 		int infMaxA = 0;
-		int infMaxB = 0;
 		Influir.QueryType operation = QueryType.DIRECTOR_INFLUENCEDBY;
 		ArrayList<String> director_InfluencedBy = new ArrayList<>();
 		HashMap<String, String> dirMap = new HashMap<>();
@@ -624,90 +615,42 @@ public class QueryUtility {
 					dirMap, detailedMovie.directors.get(i).name);
 		}
 
-		HashMap<String, Influence> Inf_Lvl2a = new HashMap<>();
-		for (String director : director_InfluencedBy) {
-			Influence inf = new Influence();
-			inf.director_InfluencedBy_Lvl2 = new HashMap<>();
-			ArrayList<String> directors = new ArrayList<>();
-			sparqlQuery = GetQuery(director, operation);
-			getInfDirectors(operation, sparqlQuery, directors, null, null);
-			inf.director_InfluencedBy_Lvl2.put(director, directors);
-
-			inf.influencedBy_Director_Lvl2 = new HashMap<>();
-			ArrayList<String> directors1 = new ArrayList<>();
-			sparqlQuery = GetQuery(director, operation2);
-			getInfDirectors(operation2, sparqlQuery, directors1, null, null);
-			inf.influencedBy_Director_Lvl2.put(director, directors1);
-
-			int influencedByScore = inf.director_InfluencedBy_Lvl2
-					.get(director).size();
-			int influencesScore = inf.influencedBy_Director_Lvl2.get(director)
-					.size();
-			inf.score = influencesScore
-					/ (influencedByScore == 0 ? 1 : influencedByScore);
-			if (infMaxA < inf.score) {
-				infMaxA = inf.score;
-			}
-			Inf_Lvl2a.put(director, inf);
-		}
-
-		HashMap<String, Influence> Inf_Lvl2b = new HashMap<>();
-		for (String director : influencedBy_Director) {
-			Influence inf = new Influence();
-			inf.director_InfluencedBy_Lvl2 = new HashMap<>();
-			ArrayList<String> directors = new ArrayList<>();
-			sparqlQuery = GetQuery(director, operation);
-			getInfDirectors(operation, sparqlQuery, directors, null, null);
-			inf.director_InfluencedBy_Lvl2.put(director, directors);
-
-			inf.influencedBy_Director_Lvl2 = new HashMap<>();
-			sparqlQuery = GetQuery(director, operation2);
-			getInfDirectors(operation, sparqlQuery, directors, null, null);
-			inf.influencedBy_Director_Lvl2.put(director, directors);
-
-			int influencedByScore = inf.director_InfluencedBy_Lvl2
-					.get(director).size();
-			int influencesScore = inf.influencedBy_Director_Lvl2.get(director)
-					.size();
-			inf.score = influencesScore
-					/ (influencedByScore == 0 ? 1 : influencedByScore);
-			if (infMaxB < inf.score) {
-				infMaxB = inf.score;
-			}
-			Inf_Lvl2b.put(director, inf);
-		}
 		String filter = "";
 		JSONArray result;
 		if (director_InfluencedBy.size() > 0) {
 			for (int i = 0; i < director_InfluencedBy.size(); i++) {
 				if (i != 0) {
-					filter = filter + "|| ?dir = \""
-							+ director_InfluencedBy.get(i) + "\"";
+					filter = filter + "|| regex(?dir, \"^"
+							+ director_InfluencedBy.get(i) + "\")";
 				} else {
-					filter = filter + " ?dir = \""
-							+ director_InfluencedBy.get(i) + "\"";
+					filter = filter + " regex(?dir, \"^"
+							+ director_InfluencedBy.get(i) + "\")";
 				}
 			}
 
-			sparqlQuery = "SELECT ?rtTitle ?audienceRating ?posterURL ?httpURL ?movie ?criticRating ?year ?dir "
+			sparqlQuery = "SELECT DISTINCT ?movie ?rtTitle ?audienceRating ?posterURL ?httpURL ?criticRating ?year ?dir "
+					+ "(group_concat(distinct ?tmdbGenre ; separator = \";\") AS ?tmdbGenres) "
+					+ "(group_concat(distinct ?keyword ; separator = \";\") AS ?keywords) "
 					+ "WHERE "
 					+ "{ "
 					+ "?director foaf:name ?dir. "
 					+ "?movie movieontology:hasDirector ?director. "
 					+ "OPTIONAL{  ?movie   movieontology:title ?rtTitle}. "
 					+ "OPTIONAL{  ?movie   movieontology:imdbrating ?audienceRating}. "
-					+ "OPTIONAL{  ?movie   movieontology:criticsrating ?criticRating}."
+					+ "OPTIONAL{  ?movie   movieontology:criticsrating ?criticRating}. "
 					+ "OPTIONAL{  ?movie   movieontology:hasPoster ?poster. "
 					+ "?poster movieontology:url ?posterURL}. "
 					+ "OPTIONAL{  ?movie   ontology:creationYear ?year}. "
-					+ "OPTIONAL{  ?movie   movieontology:url ?httpURL}"
-					+ ".FILTER(" + filter + ") " + "}";
+					+ "OPTIONAL{  ?movie   movieontology:url ?httpURL}. "
+					+ "OPTIONAL{  ?movie	movieontology:belongsToGenre ?genre."
+					+ "?genre foaf:name ?tmdbGenre}. "
+					+ "OPTIONAL{  ?movie	movieontology:keyword ?keyword}. "
+					+ "FILTER(" + filter + ") " + "}";
 
 			result = executeQuery(sparqlQuery);
 			// detailedMovieInfByList = new ArrayList<>();
 
 			for (int i = 0; i < result.size(); i++) {
-
 				JSONObject row = (JSONObject) result.get(i);
 				DetailedMovie detailedMovie1 = new DetailedMovie();
 				detailedMovie1.influirScore = new InfluirScore();
@@ -725,7 +668,7 @@ public class QueryUtility {
 							detailedMovie1.audienceRating = Integer
 									.parseInt(row.get(bindingName).toString());
 							detailedMovie1.influirScore.audienceScore = detailedMovie1.audienceRating;
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie1.audienceRating = -1;
 						}
 						break;
@@ -734,19 +677,10 @@ public class QueryUtility {
 								.toString();
 						break;
 					case "dir":
-						if (Inf_Lvl2a.containsKey((row.get(bindingName)
-								.toString()))
-								&& detailedMovie1.influirScore != null) {
-							detailedMovie1.influirScore.influScore = Inf_Lvl2a
-									.get((row.get(bindingName).toString())).score;
-							detailedMovie1.influirScore.movieDirector = dirMap
-									.get((row.get(bindingName).toString()));
-						} else {
-							if (detailedMovie1.influirScore == null) {
-								detailedMovie1.influirScore = new InfluirScore();
-							}
-							detailedMovie1.influirScore.influScore = 0;
+						if (detailedMovie1.influirScore == null) {
+							detailedMovie1.influirScore = new InfluirScore();
 						}
+						detailedMovie1.influirScore.influScore = 0;
 						detailedMovie1.influirScore.influencedByDirector = row
 								.get(bindingName).toString();
 						break;
@@ -758,7 +692,7 @@ public class QueryUtility {
 						try {
 							detailedMovie1.year = Integer.parseInt(row.get(
 									bindingName).toString());
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie1.year = -1;
 						}
 						break;
@@ -771,20 +705,30 @@ public class QueryUtility {
 							detailedMovie1.criticRating = Integer.parseInt(row
 									.get(bindingName).toString());
 							detailedMovie1.influirScore.criticScore = detailedMovie1.criticRating;
-						} catch (NullPointerException ex) {
+						} catch (Exception ex) {
 							detailedMovie1.criticRating = -1;
+						}
+						break;
+					case "tmdbGenres":
+						String[] genres = row.get(key).toString().split(";");
+						if (detailedMovie1.tmdbGenres == null)
+							detailedMovie1.tmdbGenres = new ArrayList<>();
+						for (String genre : genres) {
+							detailedMovie1.tmdbGenres.add(genre);
+						}
+						break;
+					case "keywords":
+						String[] keywords = row.get(key).toString().split(";");
+						if (detailedMovie1.keywords == null)
+							detailedMovie1.keywords = new ArrayList<>();
+						for (String keyword : keywords) {
+							detailedMovie1.keywords.add(keyword);
 						}
 						break;
 
 					}
 				}
-				/* Genres */
-				Movie movie = new Movie(detailedMovie1.imdbId,
-						detailedMovie1.imdbTitle, detailedMovie1.year,
-						detailedMovie1.uri);
-				RunQuery(detailedMovie1, movie, Influir.QueryType.GENRES);
-				/* Keywords */
-				RunQuery(detailedMovie1, movie, Influir.QueryType.KEYWORDS);
+
 				if (detailedMovie1.imdbTitle != null
 						&& !detailedMovie1.imdbTitle
 								.equals("Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb")) {
@@ -805,9 +749,9 @@ public class QueryUtility {
 
 				dm.influirScore.keywordScore = 0;
 				if (detailedMovie.keywords != null) {
-					for (String genre : dm.keywords) {
+					for (String keyword : dm.keywords) {
 						if (detailedMovie.keywords != null
-								&& detailedMovie.keywords.contains(genre)) {
+								&& detailedMovie.keywords.contains(keyword)) {
 							dm.influirScore.keywordScore++;
 						}
 					}
@@ -846,14 +790,16 @@ public class QueryUtility {
 			filter = "";
 			for (int i = 0; i < influencedBy_Director.size(); i++) {
 				if (i != 0) {
-					filter = filter + "|| ?dir = \""
-							+ influencedBy_Director.get(i) + "\"";
+					filter = filter + "|| regex(?dir, \"^"
+							+ influencedBy_Director.get(i) + "\")";
 				} else {
-					filter = filter + " ?dir = \""
-							+ influencedBy_Director.get(i) + "\"";
+					filter = filter + " regex(?dir, \"^"
+							+ influencedBy_Director.get(i) + "\")";
 				}
 			}
 			sparqlQuery = "SELECT ?rtTitle ?audienceRating ?posterURL ?httpURL ?movie ?criticRating ?year ?dir "
+					+ "(group_concat(distinct ?tmdbGenre ; separator = \";\") AS ?tmdbGenres) "
+					+ "(group_concat(distinct ?keyword ; separator = \";\") AS ?keywords)"
 					+ "WHERE "
 					+ "{ "
 					+ "?director foaf:name ?dir. "
@@ -865,6 +811,9 @@ public class QueryUtility {
 					+ "?poster movieontology:url ?posterURL}. "
 					+ "OPTIONAL{  ?movie   ontology:creationYear ?year}. "
 					+ "OPTIONAL{  ?movie   movieontology:url ?httpURL}"
+					+ "OPTIONAL{  ?movie	movieontology:belongsToGenre ?genre."
+					+ "?genre foaf:name ?tmdbGenre}"
+					+ "OPTIONAL{  ?movie	movieontology:keyword ?keyword}"
 					+ ".FILTER(" + filter + ") " + "}";
 
 			result = executeQuery(sparqlQuery);
@@ -891,6 +840,8 @@ public class QueryUtility {
 							detailedMovie1.influirScore.audienceScore = detailedMovie1.audienceRating;
 						} catch (NullPointerException ex) {
 							detailedMovie1.audienceRating = -1;
+						} catch (NumberFormatException e) {
+							detailedMovie1.audienceRating = -1;
 						}
 						break;
 					case "httpURL":
@@ -898,18 +849,18 @@ public class QueryUtility {
 								.toString();
 						break;
 					case "dir":
-						if (Inf_Lvl2b.containsKey((row.get(bindingName)
-								.toString()))) {
-							detailedMovie1.influirScore.influScore = Inf_Lvl2b
-									.get(row.get(bindingName).toString()).score;
-							detailedMovie1.influirScore.movieDirector = dirMap
-									.get((row.get(bindingName).toString()));
-						} else {
-							if (detailedMovie1.influirScore == null) {
-								detailedMovie1.influirScore = new InfluirScore();
-							}
-							detailedMovie1.influirScore.influScore = 0;
+					/*
+					 * if (Inf_Lvl2b.containsKey((row.get(bindingName)
+					 * .toString()))) { detailedMovie1.influirScore.influScore =
+					 * Inf_Lvl2b .get(row.get(bindingName).toString()).score;
+					 * detailedMovie1.influirScore.movieDirector = dirMap
+					 * .get((row.get(bindingName).toString())); } else
+					 */{
+						if (detailedMovie1.influirScore == null) {
+							detailedMovie1.influirScore = new InfluirScore();
 						}
+						detailedMovie1.influirScore.influScore = 0;
+					}
 						detailedMovie1.influirScore.influencingDirector = row
 								.get(bindingName).toString();
 						break;
@@ -922,6 +873,8 @@ public class QueryUtility {
 							detailedMovie1.year = Integer.parseInt(row.get(
 									bindingName).toString());
 						} catch (NullPointerException ex) {
+							detailedMovie1.year = -1;
+						} catch (NumberFormatException ex) {
 							detailedMovie1.year = -1;
 						}
 						break;
@@ -936,19 +889,37 @@ public class QueryUtility {
 							detailedMovie1.influirScore.criticScore = detailedMovie1.criticRating;
 						} catch (NullPointerException ex) {
 							detailedMovie1.criticRating = -1;
+						} catch (NumberFormatException e) {
+							detailedMovie1.criticRating = -1;
+						}
+						break;
+					case "tmdbGenres":
+						String[] genres = row.get(key).toString().split(";");
+						if (detailedMovie1.tmdbGenres == null)
+							detailedMovie1.tmdbGenres = new ArrayList<>();
+						for (String genre : genres) {
+							detailedMovie1.tmdbGenres.add(genre);
+						}
+						break;
+					case "keywords":
+						String[] keywords = row.get(key).toString().split(";");
+						if (detailedMovie1.keywords == null)
+							detailedMovie1.keywords = new ArrayList<>();
+						for (String keyword : keywords) {
+							detailedMovie1.keywords.add(keyword);
 						}
 						break;
 
 					}
 
 				}
-				/* Genres */
-				Movie movie = new Movie(detailedMovie1.imdbId,
-						detailedMovie1.imdbTitle, detailedMovie1.year,
-						detailedMovie1.uri);
-				RunQuery(detailedMovie1, movie, Influir.QueryType.GENRES);
-				/* Keywords */
-				RunQuery(detailedMovie1, movie, Influir.QueryType.KEYWORDS);
+				// /* Genres */
+				// Movie movie = new Movie(detailedMovie1.imdbId,
+				// detailedMovie1.imdbTitle, detailedMovie1.year,
+				// detailedMovie1.uri);
+				// RunQuery(detailedMovie1, movie, Influir.QueryType.GENRES);
+				// /* Keywords */
+				// RunQuery(detailedMovie1, movie, Influir.QueryType.KEYWORDS);
 				if (detailedMovie1.imdbTitle != null
 						&& !detailedMovie1.imdbTitle
 								.equals("Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb")) {

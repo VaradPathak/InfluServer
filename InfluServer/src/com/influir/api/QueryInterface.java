@@ -28,9 +28,6 @@ public class QueryInterface {
 			/* Get Unique Properties */
 			queryUtility.RunQuery(detailedMovie, movie,
 					Influir.QueryType.UNIQUE_PROPERTIES);
-			/* Genres */
-			queryUtility.RunQuery(detailedMovie, movie,
-					Influir.QueryType.GENRES);
 			/* Cast */
 			queryUtility.RunQuery(detailedMovie, movie, Influir.QueryType.CAST);
 			/* Directors */
@@ -39,9 +36,6 @@ public class QueryInterface {
 			/* Similar Movies */
 			queryUtility.RunQuery(detailedMovie, movie,
 					Influir.QueryType.SIMILAR_MOVIES_RT);
-			/* Keywords */
-			queryUtility.RunQuery(detailedMovie, movie,
-					Influir.QueryType.KEYWORDS);
 			/* Trailers */
 			queryUtility.RunQuery(detailedMovie, movie,
 					Influir.QueryType.TRAILERS);

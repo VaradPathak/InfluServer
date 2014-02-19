@@ -325,13 +325,18 @@ String influScore = influencingMovies.get(i).influirScore.movieScore + "%";
                     <br>\
                     <img src = 'img/uparrow.png' style='margin-bottom: 5px;'>\
                     <br>\
-            <%for (int d = 0; d < movie.directors.size(); d++)
+                    
+            <%
+            if (movie.directors != null || !movie.directors.isEmpty())
+            {
+            	for (int d = 0; d < movie.directors.size(); d++)
                 {%><span class='label label-info' style='font-size: 13px; cursor: pointer'><%=movie.directors.get(d).name%></span><%}%>\
                     <br><br>\
                     </td></tr></table></div>"
                                     }
                                     );
             <%    }
+                }
             %>
 
             <%
@@ -353,13 +358,17 @@ String influScore = influencedByMovies.get(i).influirScore.movieScore + "%";
                     <br>\
                     <img src = 'img/downarrow.png' style='margin-bottom: 5px;'>\
                     <br>\
-            <%for (int d = 0; d < movie.directors.size(); d++)
+            <%
+            if (movie.directors != null || !movie.directors.isEmpty())
+            {
+            for (int d = 0; d < movie.directors.size(); d++)
                 {%><span class='label label-info' style='font-size: 13px; cursor: pointer'><%=movie.directors.get(d).name%></span><%}%>\
                     <br><br>\
                     </td></tr></table></div>"
                                     }
                                     );
             <%    }
+                }
             %>
                                 });
         </script>
